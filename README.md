@@ -43,46 +43,126 @@ com fail2ban o els sistemes IDS: monitoritzar, detectar i respondre.
   amb 4 escenaris (tràfic normal, força bruta, atac coordinat, escaneig de
   ports) per poder provar el sistema sense un servidor real.
 
-### Patró MVC
 
-El codi segueix el patró Model-Vista-Controlador:
-
-- **Model** (`source/model/`): conté les estructures de dades i la lògica
-  (la ventana, l'arbre i els analitzadors).
-- **Vista** (`source/view/`): només s'encarrega de mostrar coses per pantalla.
-  No pren cap decisió.
-- **Controlador** (`source/controller/`): llegeix el log, coordina els
-  analitzadors (model) i les alertes (vista).
-
-  
   ### Estructura del repositori
 
 ```
 .
 ├── README.md
 ├── source/
-│   ├── main.py                  # Punt d'entrada: arranca el programa
-│   ├── generador.py             # Crea un log de prova sintètic
-│   ├── tests.py                 # 4 proves del sistema
+│   ├── main.py                  
+│   ├── generador.py             
+│   ├── tests.py                 
 │   │
-│   ├── model/                   # MODEL: dades i lògica
-│   │   ├── ventana.py           # Cua lliscant (deque)
-│   │   ├── arbol.py             # Arbre N-ari de subxarxes (recursiu)
-│   │   └── analizadores.py      # POO: classe pare + 2 filles
+│   ├── model/                   
+│   │   ├── ventana.py           
+│   │   ├── arbol.py             
+│   │   └── analizadores.py      
 │   │
-│   ├── view/                    # VISTA: pantalla
-│   │   └── vista.py             # Mostra alertes i resums
+│   ├── view/                    
+│   │   └── vista.py             
 │   │
-│   └── controller/              # CONTROLADOR: coordinació
-│       └── controlador.py       # Llegeix log, crida analitzadors, bloqueja
+│   └── controller/              
+│       └── controlador.py       
 │
-├── build/                       # (Opcional)
+├── build/                       
 │
-└── docs/                        # Documentació
-    ├── uml.png                  # Diagrama UML de classes
-    ├── flux_funcionalitat_1.png # Diagrama de flux: processament del log
-    ├── flux_funcionalitat_2.png # Diagrama de flux: detecció de subxarxes
-    ├── estudi_complexitat.pdf   # Anàlisi teòrica + temps mitjans + millores
+└── docs/                        
+    ├── uml.png                  
+    ├── flux_funcionalitat_1.png 
+    ├── flux_funcionalitat_2.png 
+    ├── estudi_complexitat.pdf   
     └── conclusions_i_propostes_futur.pdf
 
+``` 
 
+### Patró MVC
+
+El codi segueix el patró Model-Vista-Controlador:
+
+- **Model** (`source/model/`): conté les estructures de dades i la lògica
+  (la ventana, l'arbre i els analitzadors).
+- **Vista** (`source/vista/`): només s'encarrega de mostrar coses per pantalla.
+  No pren cap decisió.
+- **Controlador** (`source/controlador/`): llegeix el log, coordina els
+  analitzadors (model) i les alertes (vista).
+## Com funciona el flux d'execució
+
+Quan executes `python main.py`, passa el següent:
+
+**1.** `main.py` crea un objecte `Vista` i crida a `generador.generar()`, que
+escriu un fitxer de log fals amb 47 línies (4 escenaris d'atac mesclats).
+
+**2.** `main.py` crea un `Controlador` passant-li la vista, i li diu:
+`ctrl.procesar("log_prueba.txt")`.
+
+**3.** El controlador obre l'arxiu i va línia per línia. Per cada línia,
+la passa a **tots els analitzadors** (polimorfisme):
+
+- `AnalizadorLogin` mira si la línia conté "Failed password". Si és que sí,
+  treu la IP partint la línia per espais (`split`) i buscant la paraula que
+  va després de "from".
+- `AnalizadorPuertos` mira si conté "Connection attempt". Si és que sí,
+  guarda el port en una llista per aquella IP i crida una **funció recursiva**
+  per comptar quants ports diferents ha provat. Si en porta 4 o més, avisa.
+
+**4.** Quan un analitzador detecta alguna cosa, el controlador:
+- Guarda l'event a la `Ventana` (una cua que només manté els últims 60 segons).
+- Compta quants intents porta aquella IP dins la finestra.
+- Si supera el límit (5), la bloqueja: l'afegeix al `set` de bloquejades i
+  la insereix a l'`Arbol` de subxarxes.
+- Demana a la `Vista` que mostri l'alerta per pantalla.
+
+**5.** Quan acaba de llegir tot el log, el controlador demana a l'arbre que
+busqui subxarxes /24 amb 3 o més IPs bloquejades (mitjançant una **cerca
+recursiva** en profunditat). Si en troba, mostra l'alerta de subxarxa.
+
+**6.** Finalment, la `Vista` mostra el resum: quantes línies s'han analitzat,
+quantes IPs s'han bloquejat i quines subxarxes estan compromeses.
+
+## Instruccions d'execució i dependències
+
+### Dependències
+
+Cap. El projecte utilitza **només la llibreria estàndard de Python**. No cal
+instal·lar res amb pip.
+
+- **Requisit:** Python 3.8 o superior.
+
+Per comprovar la teva versió:
+
+```bash
+python --version
+```
+
+### Execució
+
+```bash
+cd source
+python main.py
+```
+
+Això genera un log de prova, l'analitza i mostra les IPs bloquejades i les
+subxarxes atacades per pantalla.
+
+Per executar les proves:
+
+```bash
+cd source
+python tests.py
+```
+
+##  Enllaç al vídeo demostratiu
+
+Encara l'estem grabant estara fet
+
+
+## Ús d'eines externes i IA
+
+No hem fet servir cap llibreria externa, el projecte funciona només amb la llibreria estàndard de Python.
+
+Vam començar escrivint tot el codi en un sol arxiu, amb tota la lògica barrejada. Funcionava, però era difícil d'entendre i de repartir la feina entre els dos. Vam buscar ajuda per saber com organitzar-ho millor.
+
+L'assistent ens va recomanar separar el codi seguint el patró MVC (Model-Vista-Controlador), que a més és el que el professor ens va explicar a classe. Ens va ajudar a entendre com repartir les classes entre carpetes i com fer que els imports funcionessin entre mòduls.
+
+Així hem pogut aplicar els algoritmes aplictas a classe i coneixements que ja habiem après l'any passat en Introducció a la Programació, només  ens ha orientat en l'estructura que és la part que només l'experiencia com a programador et por donar.
