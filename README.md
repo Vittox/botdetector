@@ -63,9 +63,7 @@ com fail2ban o els sistemes IDS: monitoritzar, detectar i respondre.
 │   │   └── vista.py             
 │   │
 │   └── controller/              
-│       └── controlador.py       
-│
-├── build/                       
+│       └── controlador.py                            
 │
 └── docs/                        
     ├── uml.png                  
@@ -166,3 +164,5 @@ Vam començar escrivint tot el codi en un sol arxiu, amb tota la lògica barreja
 L'assistent ens va recomanar separar el codi seguint el patró MVC (Model-Vista-Controlador), que a més és el que el professor ens va explicar a classe. Ens va ajudar a entendre com repartir les classes entre carpetes i com fer que els imports funcionessin entre mòduls.
 
 Així hem pogut aplicar els algoritmes aplictas a classe i coneixements que ja habiem après l'any passat en Introducció a la Programació, només  ens ha orientat en l'estructura que és la part que només l'experiencia com a programador et por donar.
+
+
