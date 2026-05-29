@@ -152,7 +152,7 @@ python tests.py
 
 ##  Enllaç al vídeo demostratiu
 
-Encara l'estem grabant estara fet
+(https://enticat-my.sharepoint.com/:f:/g/personal/oscar_fernandez_estudiant_enti_cat/IgCDXWFjItHWQ6_lZ6Elxf_wAeR2I3dU-_Cx7DBoed5btB4?e=4KrjzQ)
 
 
 ## Ús d'eines externes i IA
